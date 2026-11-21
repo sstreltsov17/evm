@@ -154,6 +154,42 @@ static void calculateInverseSse(const float *matrixA, float *inverseMatrix, int 
     _mm_free(matrixSum);
 }
 
+// Проверка точности: вычисляем максимальное отклонение |A * A^(-1) - I|
+static void verifyResult(const float *matrixA, const float *inverseMatrix, int size) {
+    if (size <= 8) {
+        printf("Inverse matrix (%dx%d):\n", size, size);
+        for (int i = 0; i < size; ++i) {
+            for (int j = 0; j < size; ++j) {
+                printf("%9.5f ", inverseMatrix[i * size + j]);
+            }
+            printf("\n");
+        }
+    }
+
+    float *rowProduct = (float *)malloc((size_t)size * sizeof(float));
+    float maxError = 0.0f;
+
+    for (int i = 0; i < size; ++i) {
+        memset(rowProduct, 0, (size_t)size * sizeof(float));
+        for (int k = 0; k < size; ++k) {
+            float elementA = matrixA[i * size + k];
+            for (int j = 0; j < size; ++j) {
+                rowProduct[j] += elementA * inverseMatrix[k * size + j];
+            }
+        }
+        for (int j = 0; j < size; ++j) {
+            float expected = (i == j) ? 1.0f : 0.0f;
+            float error = fabsf(rowProduct[j] - expected);
+            if (error > maxError) {
+                maxError = error;
+            }
+        }
+    }
+
+    printf("Max error |A * A^-1 - I|: %e\n", maxError);
+    free(rowProduct);
+}
+
 // Точка входа в программу
 int main(int argc, char **argv) {
     // Чтение параметров
@@ -182,8 +218,9 @@ int main(int argc, char **argv) {
     clock_gettime(CLOCK_MONOTONIC, &endTime);
     double elapsedSeconds = (endTime.tv_sec - startTime.tv_sec) + (endTime.tv_nsec - startTime.tv_nsec) * 1e-9;
 
-    // Печать результатов
+    // Печать результатов и проверка точности
     printf("[SSE Intrinsics] N = %d, M = %d | Time: %.4f sec\n", matrixSize, iterationsCount, elapsedSeconds);
+    verifyResult(matrixA, inverseMatrix, matrixSize);
 
     // Очистка выделенной памяти
     _mm_free(matrixA);
