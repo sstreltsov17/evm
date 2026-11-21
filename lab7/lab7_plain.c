@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
     printf("[Plain C] N = %d, M = %d | Time: %.4f sec\n", matrixSize, iterationsCount, elapsedSeconds);
     verifyResult(matrixA, inverseMatrix, matrixSize);
 
-    // Убираем за собой
+    // Освобождаем память
     free(matrixA);
     free(inverseMatrix);
     return 0;
